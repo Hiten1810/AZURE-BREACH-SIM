@@ -183,20 +183,25 @@ def fetch_scripts_from_url(target_url):
 # ==============================
 # STRIP CODE FENCES
 # ==============================
-def _extract_json_text(text):
+def extract_json_text(text):
     """
-    Remove Markdown-style code fences from a string, if present.
+    Try to extract the first JSON-like portion from text.
+    Returns an empty string if no valid text is given.
     """
-    if text.startswith("```"):
-        try:
-            first_newline = text.find("\n")
-            body = text[first_newline + 1 :]
-            end_idx = body.rfind("```")
-            if end_idx != -1:
-                return body[:end_idx].strip()
-        except Exception:
-            pass
+
+    # Stop immediately if text is None or empty
+    if not text:
+        return ""
+
+    # Look for the first closing curly brace
+    end_idx = text.find("}")
+    if end_idx != -1:
+        # Grab everything up to and including the brace
+        return text[:end_idx + 1].strip()
+
+    # If no brace found, just give back the original string
     return text
+
 
 # ==============================
 # LLM ANALYSIS (CHUNK-SAFE + ROBUST)
@@ -231,7 +236,7 @@ def analyze_with_llm(script_block):
                 continue                                        # Go to next chunk without parsing
 
             # Clean the output by removing any surrounding Markdown code fences
-            raw = _extract_json_text(raw)
+            raw = extract_json_text(raw)
 
             # 🛡 SAFETY CHECK 2 — If cleaning removed everything, skip this chunk
             if not raw:
